@@ -4,19 +4,19 @@ if (isset($_POST['login'])) {
     $output = Login::doLogin($_POST['username'], $_POST['password']);
     require 'lib/Yubico/Yubikey.php';
     $yubi = yubikey::verify($_POST['otp']);
-    if ($yubi && $output){
+    if ($yubi && $output) {
         $ayubi = Login::verifyYubikey($_POST['username'], $_POST['otp']);
-        if($ayubi){
-        session_start();
-        $_SESSION['name'] = $_POST['username'];
-        session_commit();
-        header('Location: ' . 'index.php');
-        die;
-        }else{
-            echo "yubikey: ".$ayubi;
+        if ($ayubi) {
+            session_start();
+            $_SESSION['name'] = $_POST['username'];
+            session_commit();
+            header('Location: ' . 'index.php');
+            die;
+        } else {
+            echo "yubikey: " . $ayubi;
         }
-    }else{
-        echo $yubi." ,".$output;
+    } else {
+        echo $yubi . " ," . $output;
     }
 }
 ?>
@@ -27,7 +27,8 @@ if (isset($_POST['login'])) {
         <meta charset="utf-8">
         <link rel="icon" type="image/vnd.microsoft.icon"  href="./resources/favicon.ico"/>
         <title>
-            <?php include __DIR__.'/res/config.php'; echo $conf['title']; ?>
+            <?php include __DIR__ . '/res/config.php';
+            echo $conf['title']; ?>
         </title>
     </head>
     <body>
@@ -36,7 +37,7 @@ if (isset($_POST['login'])) {
             if (isset($output) && !$output) {
                 echo '<div clasn"s="alert alert-danger" role="alert"><b>Wrong Username or Password!</b><br>Maybe you misspelled something?</div>';
             }
-            if(isset($yubi)){
+            if (isset($yubi)) {
                 echo $yubi;
             }
             ?>
