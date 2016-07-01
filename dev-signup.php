@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
     <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title></title>
     </head>
     <body>
@@ -13,9 +13,9 @@
                 require 'lib/auth/API.php';
                 if (Login::register($_POST['username'], $_POST['password'], $_POST['yubikey']) == 1) {
                     echo "true";
-                } elseif(Login::register($_POST['username'], $_POST['password'], $_POST['yubikey']) == 0) {
+                } elseif (Login::register($_POST['username'], $_POST['password'], $_POST['yubikey']) == 0) {
                     $error = "<b>User already exists!</b>";
-                }else{
+                } else {
                     echo "false";
                 }
             } else {

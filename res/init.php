@@ -15,7 +15,6 @@ function error($status, $title, $message) {
     echo('</div>');
     if (defined("DEBUG"))
         echo('<hr>' . PHP_EOL . $_SERVER['SERVER_SIGNATURE'] . PHP_EOL);
-    //include(__DIR__.'/../res/footer.php');
 }
 
 if (file_exists($config_location)) {
