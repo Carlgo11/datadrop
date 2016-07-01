@@ -5,7 +5,7 @@ class Login {
     public static function register($username, $password, $yubikey) {
         if (Login::userExists($username) == false) {
             $hash = password_hash($password, PASSWORD_BCRYPT, Login::generateHashCost());
-            include_once __DIR__ . '/../../res/config.php';
+            include __DIR__ . '/../../res/config.php';
             $con = mysqli_connect($conf['mysql-url'], $conf['mysql-user'], $conf['mysql-password'], $conf['mysql-db']) or die("Connection problem.");
             $query = $con->prepare("INSERT INTO `" . $conf['login-table'] . "` (`username`, `password`, `yubikey`) VALUES (?, ?, ?);");
             $query->bind_param("sss", $username, $hash, $yubikey);
@@ -16,8 +16,8 @@ class Login {
     }
 
     public static function getPassword($username, $password) {
-        include_once __DIR__ . '/../../res/config.php';
-        $con = mysqli_connect($conf['mysql-url'], $conf['mysql-user'], $conf['mysql-password'], $conf['login-db']) or die("Connection problem.");
+        include __DIR__ . '/../../res/config.php';
+        $con = mysqli_connect($conf['mysql-url'], $conf['mysql-user'], $conf['mysql-password'], $conf['mysql-db']) or die("Connection problem.");
         $query = $con->prepare("SELECT * FROM `" . $conf['login-table'] . "` WHERE username = ?");
         $query->bind_param("s", $username);
         $query->execute();
@@ -31,8 +31,8 @@ class Login {
     }
 
     public static function verifyYubikey($username, $otp) {
-        include_once __DIR__ . '/../../res/config.php';
-        $con = mysqli_connect($conf['mysql-url'], $conf['mysql-user'], $conf['mysql-password'], $conf['login-db']) or die("Connection problem.");
+        include __DIR__ . '/../../res/config.php';
+        $con = mysqli_connect($conf['mysql-url'], $conf['mysql-user'], $conf['mysql-password'], $conf['mysql-db']) or die("Connection problem.");
         $query = $con->prepare("SELECT `yubikey` FROM `" . $conf['login-table'] . "` WHERE username = ?");
         $query->bind_param("s", $username);
         $query->execute();
@@ -55,11 +55,9 @@ class Login {
     }
 
     public static function userExists($username) {
-        include_once __DIR__ . '/../../res/config.php';
-        $con = mysqli_connect($conf['mysql-url'], $conf['mysql-user'], $conf['mysql-password'], $conf['login-db']) or die("Connection problem.");
-
-        $s = "SELECT COUNT(*) AS num FROM `" . $conf['login-table'] . "` WHERE `username` = ?";
-        $query = $con->prepare($s);
+        include __DIR__ . '/../../res/config.php';
+        $con = mysqli_connect($conf['mysql-url'], $conf['mysql-user'], $conf['mysql-password'], $conf['mysql-db']) or die("Connection problem.");
+        $query = $con->prepare("SELECT COUNT(*) AS num FROM `" . $conf['login-table'] . "` WHERE `username` = ?");
         $query->bind_param("s", $username);
         $query->execute();
         $result = $query->get_result();
@@ -89,7 +87,7 @@ class Login {
         if (Login::getPassword($username, $oldpassword)) {
             $hash = password_hash($password, PASSWORD_BCRYPT, Login::generateHashCost($password));
             include_once __DIR__ . '/../../res/config.php';
-            $con = mysqli_connect($conf['mysql-url'], $conf['mysql-user'], $conf['mysql-password'], $conf['login-db']) or die("Connection problem.");
+            $con = mysqli_connect($conf['mysql-url'], $conf['mysql-user'], $conf['mysql-password'], $conf['mysql-db']) or die("Connection problem.");
             $query = $con->prepare("UPDATE `" . $conf['login-table'] . "` SET `password`=? WHERE `username`=?;");
             $query->bind_param("ss", $hash, $username);
             $query->execute();
@@ -103,13 +101,14 @@ class Login {
 class Encryption {
 
     public static function decrypt($data, $password) {
-        include_once __DIR__ . '/../../res/config.php';
-        return openssl_decrypt($data, $conf['Encryption-Method'], $password);
+        include __DIR__ . '/../../res/config.php';
+        return openssl_decrypt($data, $conf['Encryption-Method'], $password, 0, "1234567812345678");
     }
 
     public static function encrypt($data, $password) {
-        include_once __DIR__ . '/../../res/config.php';
-        return openssl_encrypt($data, $conf['Encryption-Method'], $password);
+        include __DIR__ . '/../../res/config.php';
+        //openssl_encrypt($data, $method, $password, $options, $iv)
+        return openssl_encrypt($data, $conf['Encryption-Method'], $password, 0, "1234567812345678");
     }
 
 }
@@ -117,25 +116,32 @@ class Encryption {
 class data_storage {
 
     public static function getFile($id, $password) {
-        include_once __DIR__ . '/../../res/config.php';
-        $con = mysqli_connect($conf['mysql-url'], $conf['mysql-user'], $conf['mysql-password'], $conf['data-db']) or die("Connection problem.");
-        $query = $database->prepare("SELECT metadata, content FROM `" . $conf['data-db'] . "` WHERE `id` = ?");
+        include __DIR__ . '/../../res/config.php';
+        $con = mysqli_connect($conf['mysql-url'], $conf['mysql-user'], $conf['mysql-password'], $conf['mysql-db']) or die("Connection problem.");
+        $query = $con->prepare("SELECT metadata, content FROM `" . $conf['data-table'] . "` WHERE `id` = ?");
         $query->bind_param("i", $id);
         $query->execute();
         $query->bind_result($enc_filedata, $enc_content);
+        $query->fetch();
+        $filedata = Encryption::decrypt($enc_filedata, $password);
+        //echo "<br>".$filedata;
+        $filecontent = Encryption::decrypt($enc_content, $password);
+        //echo "<br>".$filecontent;
         return [
-            Encryption::decrypt($enc_filedata, $password),
-            Encryption::decrypt($enc_content, $password),
+            $filedata, $filecontent
         ];
     }
 
     public static function uploadFile($content, $filename, $filesize, $filetype, $password, $author) {
-        include_once __DIR__ . '/../../res/config.php';
-        $enc_filedata = Encryption::encrypt(array($filename, $filesize, $filetype), $password);
+        include __DIR__ . '/../../res/config.php';
+        $enc_filedata = Encryption::encrypt(implode(" ", array($filename, $filesize, $filetype)), $password);
         $enc_content = Encryption::encrypt($content, $password);
-        $con = mysqli_connect($conf['mysql-url'], $conf['mysql-user'], $conf['mysql-password'], $conf['login-db']) or die("Connection problem.");
+        $NULL = NULL;
+        $con = mysqli_connect($conf['mysql-url'], $conf['mysql-user'], $conf['mysql-password'], $conf['mysql-db']) or die("Connection problem.");
         $query = $con->prepare("INSERT INTO `" . $conf['data-table'] . "` (author, metadata, content) VALUES (?,?,?)");
-        $query->bind_param("ssb", $author, $enc_filedata, $enc_content);
+        $query->bind_param("ssb", $author, $enc_filedata, $NULL);
+        $query->send_long_data(2, $enc_content);
+        $query->execute();
     }
 
 }
